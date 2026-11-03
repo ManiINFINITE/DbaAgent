@@ -1,0 +1,6 @@
+﻿Here is the user's description of the system:
+"""
+{{ raw_description }}
+"""
+
+Analyze this description and output the structured intake summary (Actors, Main Entities, Main Business Processes).
