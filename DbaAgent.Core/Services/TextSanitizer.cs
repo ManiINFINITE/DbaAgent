@@ -42,4 +42,21 @@ public static partial class TextSanitizer
 
         return trimmed;
     }
+    
+    /// <summary>
+    /// Automatically cleans known LLM Mermaid syntax hallucinations before saving to disk.
+    /// </summary>
+    public static string SanitizeMermaid(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text) || !text.Contains("```mermaid"))
+            return text;
+
+        // 1. Replace SQL "DEFAULT <val>" on entity attribute lines
+        text = Regex.Replace(text, @"(\b(?:BOOLEAN|INT|VARCHAR|TEXT|DATE|TIME)\s+\w+)\s+DEFAULT\s+[^\r\n]+", "$1", RegexOptions.IgnoreCase);
+
+        // 2. Replace SQL "UNIQUE" constraint with Mermaid "UK"
+        text = Regex.Replace(text, @"(\b(?:BOOLEAN|INT|BIGINT|VARCHAR|TEXT|DATE|TIME)\s+\w+)\s+UNIQUE\b", "$1 UK", RegexOptions.IgnoreCase);
+
+        return text;
+    }
 }

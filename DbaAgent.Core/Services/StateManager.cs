@@ -1,30 +1,21 @@
-﻿using System.Text.Encodings.Web;
-using System.Text.Json;
-using DbaAgent.Core.Models;
+﻿using DbaAgent.Core.Models;
 
 namespace DbaAgent.Core.Services;
 
 public sealed class StateManager
 {
+    readonly private string _baseDir;
     readonly private string _outputDir;
     readonly private string _stateFilePath;
 
-    readonly private static JsonSerializerOptions JsonOptions = new()
+    public string OutputDirectory => _outputDir;
+
+    public StateManager(string baseDir = "output", string scenarioName = "default")
     {
-        WriteIndented = true,
-        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
-    };
-
-    public StateManager(string outputDir = "output")
-    {
-        _outputDir = outputDir;
-
-        if (!Directory.Exists(_outputDir))
-        {
-            Directory.CreateDirectory(_outputDir);
-        }
-
+        _baseDir = baseDir;
+        _outputDir = Path.Combine(baseDir, scenarioName.Trim().ToLowerInvariant());
         _stateFilePath = Path.Combine(_outputDir, "state.json");
+        Directory.CreateDirectory(_outputDir);
     }
 
     public bool HasExistingSession() => File.Exists(_stateFilePath);
@@ -39,21 +30,24 @@ public sealed class StateManager
         }
 
         var json = await File.ReadAllTextAsync(_stateFilePath);
-        var state = JsonSerializer.Deserialize<SessionState>(json, JsonOptions);
-        return state ?? new SessionState();
+        return System.Text.Json.JsonSerializer.Deserialize<SessionState>(json) ?? new SessionState();
     }
 
     public async Task SaveAsync(SessionState state)
     {
-        state.LastUpdatedAt = DateTime.UtcNow;
-        var json = JsonSerializer.Serialize(state, JsonOptions);
+        var json = System.Text.Json.JsonSerializer.Serialize(state,
+            new System.Text.Json.JsonSerializerOptions
+            {
+                WriteIndented = true
+            });
+
         await File.WriteAllTextAsync(_stateFilePath, json);
     }
 
     public async Task WriteArtifactAsync(string filename, string content)
     {
-        // Automatically sanitize outer markdown/sql fences if present
         var sanitizedContent = TextSanitizer.StripOuterCodeFence(content);
+        sanitizedContent = TextSanitizer.SanitizeMermaid(sanitizedContent);
 
         var filePath = Path.Combine(_outputDir, filename);
         await File.WriteAllTextAsync(filePath, sanitizedContent);

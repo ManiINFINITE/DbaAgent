@@ -21,9 +21,13 @@ The document MUST include:
 
 Ensure the Mermaid syntax is strict and error-free so it renders natively in GitHub and Markdown viewers. Output pure Markdown.
 
-MERMAID SYNTAX RULES:
-- ALWAYS wrap relationship labels in double quotes (e.g., `A ||--o{ B : "places"` or `A ||--|| B : "corresponds to"`). Never leave relationship labels unquoted.
-- Ensure entity names are single alphanumeric words without spaces or dashes.
+CRITICAL MERMAID ER DIAGRAM SYNTAX RULES:
+1. Attribute format is STRICTLY: <DataType> <AttributeName> [<KeyConstraint>]
+   - Allowed KeyConstraints are ONLY: PK, FK, UK.
+   - NEVER write SQL keywords like UNIQUE, NOT NULL, AUTO_INCREMENT, or DEFAULT TRUE/FALSE inside entity attribute lines.
+2. ALWAYS wrap relationship labels in double quotes (e.g., A ||--o{ B : "places").
+3. NEVER reference undeclared entities in relationships (every entity name on both sides of a relationship must have a corresponding entity { ... } block defined).
+4. Entity names must be single alphanumeric words without spaces.
 
 CRITICAL FORMATTING CONSTRAINT:
 Return raw, unquoted Markdown directly.

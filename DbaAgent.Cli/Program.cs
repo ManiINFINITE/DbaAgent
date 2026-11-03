@@ -15,6 +15,23 @@ if (Directory.Exists("output"))
 
 AnsiConsole.Write(new FigletText("DBA Agent").Color(Color.Cyan1));
 
+// Prompt for Scenario / Project Workspace
+var scenarioName = AnsiConsole.Prompt(
+    new TextPrompt<string>("Enter [green]scenario / workspace name[/] (e.g., 'pawcare', 'food_delivery'):")
+        .DefaultValue("pawcare"));
+
+var stateManager = new StateManager("output", scenarioName);
+AnsiConsole.MarkupLine($"[grey]Active Workspace:[/] [yellow]{stateManager.OutputDirectory}[/]");
+
+if (Directory.Exists(stateManager.OutputDirectory))
+{
+    foreach (var file in Directory.GetFiles(stateManager.OutputDirectory, "*.md"))
+    {
+        var text = await File.ReadAllTextAsync(file);
+        await File.WriteAllTextAsync(file, TextSanitizer.StripOuterCodeFence(text));
+    }
+}
+
 var configuration = new ConfigurationBuilder()
     .SetBasePath(AppContext.BaseDirectory)
     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
@@ -35,7 +52,6 @@ var dbValidationConfig = configuration.GetSection("DbValidationConfig").Get<DbVa
 var logger = new LlmCallLogger();
 var llmService = new LlmService(config, logger);
 var promptService = new PromptService("prompts");
-var stateManager = new StateManager("output");
 
 var state = await stateManager.LoadOrCreateAsync();
 

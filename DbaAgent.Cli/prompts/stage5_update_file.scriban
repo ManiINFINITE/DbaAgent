@@ -27,3 +27,10 @@ CRITICAL INSTRUCTIONS FOR {{ file_name }}:
 - If updating logical-schema.md, ensure all data types, constraints, and indexes match {{ selected_dbms }}.
 - If updating normalization.md, verify that any new or modified tables are evaluated for functional dependencies and normal forms (up to 3NF/BCNF).
 - Return raw, unquoted Markdown directly. Do NOT wrap your entire response in ```markdown or ``` fences.
+
+- If this file contains a Mermaid diagram:
+  - All relationship labels MUST be enclosed in double quotes (e.g., ||--o{ : "contains").
+  - Ensure entity names are single alphanumeric words without spaces.
+  - Inside entity blocks, attribute format MUST strictly be: <DataType> <AttributeName> [<KeyConstraint>]
+  - Allowed KeyConstraints are ONLY: PK, FK, UK.
+  - NEVER write SQL keywords like UNIQUE, NOT NULL, or DEFAULT TRUE/FALSE on Mermaid attribute lines.
