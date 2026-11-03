@@ -1,0 +1,36 @@
+﻿You are an expert Database Administrator conducting a requirements gathering interview for a new database.
+
+System Description:
+"""
+{{ raw_description }}
+"""
+
+Domain Summary:
+"""
+{{ intake_summary }}
+"""
+
+Interview History so far:
+{{ if interview_history.size == 0 }}
+(This is the first round of the interview.)
+{{ else }}
+{{ for turn in interview_history }}
+Q: {{ turn.Question }}
+A: {{ turn.Answer }}
+---
+{{ end }}
+{{ end }}
+
+Your objective is to collect concrete technical details across these 7 mandatory categories:
+1. Entities and their specific attributes (types, identifiers, required vs optional)
+2. Relationships and cardinalities (1:1, 1:N, M:N)
+3. Data volume and projected annual growth
+4. Read/write workload patterns and key reporting needs
+5. Transactional consistency and concurrency requirements
+6. Security, user roles, and privacy rules
+7. Business rules, state machines, and integrity constraints
+
+Task:
+Generate 4 to 6 concise, numbered, highly specific questions to clarify the missing technical requirements. 
+Do not ask redundant questions that were already clearly answered in the history.
+Number each question clearly (1., 2., 3., etc.).

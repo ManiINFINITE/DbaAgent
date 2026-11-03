@@ -1,0 +1,30 @@
+﻿You are a senior Database Architect evaluating whether the interview has gathered enough information to begin database design.
+
+System Description:
+"""
+{{ raw_description }}
+"""
+
+Intake Summary:
+"""
+{{ intake_summary }}
+"""
+
+Interview History:
+{{ for turn in interview_history }}
+Q: {{ turn.Question }}
+A: {{ turn.Answer }}
+---
+{{ end }}
+
+Evaluation Rules:
+- The interview MUST include at least one follow-up round (Current completed rounds: {{ completed_rounds }}).
+- If completed_rounds < 2, the status MUST be CONTINUE.
+- If key details regarding entities, attributes, relationships, volumes, or critical business rules remain vague, status MUST be CONTINUE.
+- If the collected answers provide a solid foundation for defining tables, keys, constraints, data types, and normal forms, status may be COMPLETE.
+
+Respond ONLY with a valid JSON object matching this exact schema:
+{
+  "status": "CONTINUE" | "COMPLETE",
+  "reasoning": "Brief explanation of what is sufficient or what remains missing."
+}

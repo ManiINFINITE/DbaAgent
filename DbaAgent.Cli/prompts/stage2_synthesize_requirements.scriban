@@ -1,0 +1,36 @@
+﻿You are an expert Database Architect.
+Synthesize the entire requirements interview into a comprehensive, professional requirements specification document.
+
+System Description:
+"""
+{{ raw_description }}
+"""
+
+Intake Summary:
+"""
+{{ intake_summary }}
+"""
+
+Interview Questions & Answers:
+{{ for turn in interview_history }}
+### Question
+{{ turn.Question }}
+
+### Client Answer
+{{ turn.Answer }}
+---
+{{ end }}
+
+Task:
+Generate a complete, structured Markdown document titled `# Database Requirements Specification`.
+The document must thoroughly cover the following sections:
+1. Executive Summary & System Scope
+2. Entities and Attribute Definitions (list every entity, its purpose, candidate keys, and known attributes)
+3. Entity Relationships & Cardinalities (detail all 1:1, 1:N, and M:N links)
+4. Workload, Data Volume & Growth Projections
+5. Query Patterns, Read/Write Ratio & Reporting Needs
+6. Transactions, Concurrency & ACID Consistency Requirements
+7. Security, User Roles & Access Boundaries
+8. Business Rules, Constraints, and Validation Invariants
+
+Make the document detailed, authoritative, and unambiguous. Output pure Markdown.

@@ -42,20 +42,18 @@ if (stateManager.HasExistingSession() && !string.IsNullOrWhiteSpace(state.RawDes
     }
 }
 
+// -------------------------------------------------------------
 // Stage 1: System Intake
+// -------------------------------------------------------------
 if (state.CurrentStage == WorkflowStage.Intake)
 {
     AnsiConsole.Write(new Rule("[bold yellow]Stage 1: System Intake[/]").LeftJustified());
-    AnsiConsole.MarkupLine("[italic grey]Describe the system you need a database for. Press Enter when finished:[/]\n");
 
-    var userInput = AnsiConsole.Prompt(
-        new TextPrompt<string>("[green]Describe system>[/]")
-            .PromptStyle("white")
-    );
+    var userInput = ReadMultiLineInput("[green]Describe the system you need a database for:[/]");
 
     var intakeStage = new Stage1Intake(llmService, promptService, stateManager);
 
-    string summary = string.Empty;
+    var summary = string.Empty;
 
     await AnsiConsole.Status()
         .Spinner(Spinner.Known.Dots)
@@ -72,16 +70,96 @@ if (state.CurrentStage == WorkflowStage.Intake)
 
     AnsiConsole.MarkupLine("\n[green]Stage 1 complete! State saved to output/state.json[/]");
 }
-else
-{
-    AnsiConsole.MarkupLine($"[blue]Resumed at stage:[/] [bold]{state.CurrentStage}[/]");
 
-    if (!string.IsNullOrWhiteSpace(state.IntakeSummary))
+// -------------------------------------------------------------
+// Stage 2: Requirements Interview
+// -------------------------------------------------------------
+if (state.CurrentStage == WorkflowStage.Interview)
+{
+    AnsiConsole.Write(new Rule("[bold yellow]Stage 2: Requirements Interview[/]").LeftJustified());
+
+    AnsiConsole.MarkupLine(
+        "[grey]The agent will ask technical questions to clarify database constraints, volumes, and business rules.[/]\n");
+
+    var interviewStage = new Stage2Interview(llmService, promptService, stateManager);
+    var roundNumber = state.InterviewHistory.Count + 1;
+    var interviewComplete = false;
+
+    while (!interviewComplete)
     {
-        AnsiConsole.Write(new Panel(new Markup(state.IntakeSummary.Replace("[", "[[").Replace("]", "]]")))
+        AnsiConsole.MarkupLine($"\n[bold cyan]── Interview Round {roundNumber} ──[/]");
+
+        var questions = string.Empty;
+
+        await AnsiConsole.Status()
+            .Spinner(Spinner.Known.Dots)
+            .StartAsync("Formulating questions based on domain model and prior answers...",
+                async _ => { questions = await interviewStage.GenerateQuestionsAsync(state); });
+
+        AnsiConsole.Write(new Panel(new Markup(questions.Replace("[", "[[").Replace("]", "]]")))
         {
-            Header = new PanelHeader("[bold cyan]Loaded Intake Summary[/]"),
+            Header = new PanelHeader($"[bold green]Questions (Round {roundNumber})[/]"),
             Border = BoxBorder.Rounded
         });
+
+        var clientAnswer = ReadMultiLineInput("[green]Your Answers:[/]");
+
+        state.InterviewHistory.Add(new InterviewExchange(questions, clientAnswer));
+        await stateManager.SaveAsync(state);
+
+        InterviewEvaluationResult evalResult = null!;
+
+        await AnsiConsole.Status()
+            .Spinner(Spinner.Known.Dots)
+            .StartAsync("Evaluating requirements sufficiency...",
+                async _ => { evalResult = await interviewStage.EvaluateSufficiencyAsync(state, roundNumber); });
+
+        AnsiConsole.MarkupLine($"[grey]Evaluation:[/] [yellow]{evalResult.Reasoning}[/]");
+
+        if (evalResult.IsComplete)
+        {
+            interviewComplete = true;
+
+            AnsiConsole.MarkupLine(
+                "[bold green]Agent has determined that sufficient information has been gathered.[/]");
+        }
+        else
+        {
+            roundNumber++;
+        }
     }
+
+    // Synthesize final requirements.md
+    var requirementsMd = string.Empty;
+
+    await AnsiConsole.Status()
+        .Spinner(Spinner.Known.Dots)
+        .StartAsync("Synthesizing formal requirements specification (requirements.md)...",
+            async _ => { requirementsMd = await interviewStage.FinalizeRequirementsAsync(state); });
+
+    AnsiConsole.MarkupLine("\n[bold green]Stage 2 Complete![/] Generated [cyan]output/requirements.md[/]");
+}
+
+static string ReadMultiLineInput(string headerMarkup)
+{
+    AnsiConsole.MarkupLine(headerMarkup);
+
+    AnsiConsole.MarkupLine(
+        "[italic grey](Paste or type your text. When finished, type [bold white]END[/] on a new line and press Enter)[/]\n");
+
+    var lines = new List<string>();
+
+    while (true)
+    {
+        var line = Console.ReadLine();
+
+        if (line is null || line.Trim().Equals("END", StringComparison.OrdinalIgnoreCase))
+        {
+            break;
+        }
+
+        lines.Add(line);
+    }
+
+    return string.Join(Environment.NewLine, lines).Trim();
 }
