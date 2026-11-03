@@ -4,10 +4,13 @@ using DbaAgent.Core.Stages;
 using Microsoft.Extensions.Configuration;
 using Spectre.Console;
 
-foreach (var file in Directory.GetFiles("output", "*.md"))
+if (Directory.Exists("output"))
 {
-    var text = await File.ReadAllTextAsync(file);
-    await File.WriteAllTextAsync(file, TextSanitizer.StripOuterCodeFence(text));
+    foreach (var file in Directory.GetFiles("output", "*.md"))
+    {
+        var text = await File.ReadAllTextAsync(file);
+        await File.WriteAllTextAsync(file, TextSanitizer.StripOuterCodeFence(text));
+    }
 }
 
 AnsiConsole.Write(new FigletText("DBA Agent").Color(Color.Cyan1));
@@ -25,6 +28,9 @@ if (config is null || string.IsNullOrWhiteSpace(config.ApiKey))
     AnsiConsole.MarkupLine("[red]Error: API Key is missing in appsettings.json[/]");
     return;
 }
+
+var dbValidationConfig = configuration.GetSection("DbValidationConfig").Get<DbValidationConfig>()
+                         ?? new DbValidationConfig();
 
 var logger = new LlmCallLogger();
 var llmService = new LlmService(config, logger);
@@ -289,6 +295,61 @@ if (state.CurrentStage == WorkflowStage.SqlGeneration)
     AnsiConsole.MarkupLine("\n[bold green]Stage 6 Complete![/] Generated SQL artifacts in [cyan]output/[/]:");
     AnsiConsole.MarkupLine("  [green]✓[/] [cyan]output/schema.sql[/] (DDL tables, constraints, partial indexes)");
     AnsiConsole.MarkupLine("  [green]✓[/] [cyan]output/seed.sql[/] (Realistic test dataset with foreign key ordering)");
+}
+
+// -------------------------------------------------------------
+// Bonus (+15%): Real DBMS Validation Loop
+// -------------------------------------------------------------
+if (state.CurrentStage == WorkflowStage.Completed)
+{
+    AnsiConsole.WriteLine();
+    AnsiConsole.Write(new Rule("[bold yellow]Bonus (+15%): Real DBMS Validation Loop[/]").LeftJustified());
+
+    var runBonus = AnsiConsole.Confirm(
+        "Would you like to run automated live validation against the real DBMS instance?",
+        defaultValue: true);
+
+    if (runBonus)
+    {
+        var validationEngine = new ValidationEngine(
+            llmService,
+            promptService,
+            stateManager,
+            logger,
+            dbValidationConfig);
+
+        try
+        {
+            var isFullyValidated = false;
+
+            await AnsiConsole.Status()
+                .Spinner(Spinner.Known.Dots)
+                .StartAsync("Executing schema and seed scripts in real DBMS...",
+                    async ctx =>
+                    {
+                        isFullyValidated =
+                            await validationEngine.RunValidationLoopAsync(state, msg => { ctx.Status(msg); });
+                    });
+
+            if (isFullyValidated)
+            {
+                AnsiConsole.MarkupLine(
+                    "[bold green]SUCCESS:[/] Both schema.sql and seed.sql executed cleanly with 0 errors in the live database!");
+            }
+            else
+            {
+                AnsiConsole.MarkupLine(
+                    $"[bold red]Validation failed after {dbValidationConfig.MaxRepairAttempts} repair attempts.[/] Check logs/llm_calls.jsonl for database error traces.");
+            }
+        }
+        catch (Exception ex)
+        {
+            AnsiConsole.MarkupLine($"[bold red]Database Connection Note:[/] {ex.Message}");
+
+            AnsiConsole.MarkupLine(
+                "[grey]To run PostgreSQL in Docker: [white]docker run --name pg-test -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=dba_agent_test -p 5432:5432 -d postgres:16-alpine[/][/]");
+        }
+    }
 }
 
 // -------------------------------------------------------------
