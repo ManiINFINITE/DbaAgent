@@ -23,13 +23,14 @@ public sealed class Stage4DesignDocumentation(
                 selected_dbms = state.SelectedDbms
             });
 
-        state.ConceptualModelDoc =
+        var rawConceptual =
             (await llmService.GenerateAsync("Stage4_Conceptual", conceptualSystem, conceptualPrompt)).Trim();
 
-        await stateManager.WriteArtifactAsync("conceptual-model.md", state.ConceptualModelDoc);
+        // Sanitize BEFORE it enters state, so later prompts never see the broken diagram.
+        state.ConceptualModelDoc = await stateManager.WriteArtifactAsync("conceptual-model.md", rawConceptual);
         await stateManager.SaveAsync(state);
 
-        // 2. Logical Schema (uses conceptual model to ensure consistency)
+        // 2. Logical Schema (uses the sanitized conceptual model)
         progressCallback("Translating to DBMS-specific logical schema (logical-schema.md)...");
 
         const string logicalSystem =
@@ -43,14 +44,15 @@ public sealed class Stage4DesignDocumentation(
                 selected_dbms = state.SelectedDbms
             });
 
-        state.LogicalSchemaDoc =
+        var rawLogical =
             (await llmService.GenerateAsync("Stage4_Logical", logicalSystem, logicalPrompt)).Trim();
 
-        await stateManager.WriteArtifactAsync("logical-schema.md", state.LogicalSchemaDoc);
+        state.LogicalSchemaDoc = await stateManager.WriteArtifactAsync("logical-schema.md", rawLogical);
         await stateManager.SaveAsync(state);
 
         // 3. Normalization Analysis (uses logical schema)
         progressCallback("Performing 1NF-BCNF normalization & functional dependency analysis (normalization.md)...");
+
         const string normSystem = "You are a Database Theorist conducting formal normal form and dependency proofs.";
 
         var normPrompt = await promptService.RenderAsync("stage4_normalization.scriban",
@@ -60,10 +62,10 @@ public sealed class Stage4DesignDocumentation(
                 logical_doc = state.LogicalSchemaDoc
             });
 
-        state.NormalizationDoc =
+        var rawNormalization =
             (await llmService.GenerateAsync("Stage4_Normalization", normSystem, normPrompt)).Trim();
 
-        await stateManager.WriteArtifactAsync("normalization.md", state.NormalizationDoc);
+        state.NormalizationDoc = await stateManager.WriteArtifactAsync("normalization.md", rawNormalization);
         await stateManager.SaveAsync(state);
 
         // 4. Assumptions & Ambiguities
@@ -79,10 +81,10 @@ public sealed class Stage4DesignDocumentation(
                 logical_doc = state.LogicalSchemaDoc
             });
 
-        state.AssumptionsDoc =
+        var rawAssumptions =
             (await llmService.GenerateAsync("Stage4_Assumptions", assumptionsSystem, assumptionsPrompt)).Trim();
 
-        await stateManager.WriteArtifactAsync("assumptions.md", state.AssumptionsDoc);
+        state.AssumptionsDoc = await stateManager.WriteArtifactAsync("assumptions.md", rawAssumptions);
 
         // Advance stage
         state.CurrentStage = WorkflowStage.RevisionLoop;

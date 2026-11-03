@@ -44,12 +44,10 @@ public sealed class StateManager
         await File.WriteAllTextAsync(_stateFilePath, json);
     }
 
-    public async Task WriteArtifactAsync(string filename, string content)
+    public async Task<string> WriteArtifactAsync(string filename, string content)
     {
-        var sanitizedContent = TextSanitizer.StripOuterCodeFence(content);
-        sanitizedContent = TextSanitizer.SanitizeMermaid(sanitizedContent);
-
-        var filePath = Path.Combine(_outputDir, filename);
-        await File.WriteAllTextAsync(filePath, sanitizedContent);
+        var clean = TextSanitizer.SanitizeMermaid(TextSanitizer.StripOuterCodeFence(content));
+        await File.WriteAllTextAsync(Path.Combine(_outputDir, filename), clean);
+        return clean;
     }
 }

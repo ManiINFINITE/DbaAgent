@@ -23,7 +23,7 @@ The document MUST include:
    - Explicitly detail foreign key referential actions (`ON DELETE RESTRICT/CASCADE/SET NULL`, `ON UPDATE CASCADE`).
 2. **Constraint Catalog**: Explicit list of all `CHECK`, `UNIQUE`, and `NOT NULL` constraints enforcing the business rules.
 3. **Indexing Strategy**: Exhaustive list of all B-Tree indexes, compound indexes, and partial indexes (e.g., partial unique index for default customer address). Explain the query patterns each index accelerates.
-4. **Relational Diagram**: A Mermaid diagram representing the relational tables, foreign key linkages, and column lists.
+4. **Relational Diagram**: a Mermaid erDiagram following the rules above.
 
 All tables and column names must strictly use consistent naming conventions (e.g., snake_case). Output pure Markdown.
 

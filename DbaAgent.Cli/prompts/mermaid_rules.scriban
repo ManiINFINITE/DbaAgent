@@ -1,0 +1,45 @@
+﻿CRITICAL MERMAID RULES. The diagram MUST start with `erDiagram`. No other diagram type is allowed.
+1. In the DIAGRAM ONLY, use simplified one-word types: INT, BIGINT, SMALLINT, VARCHAR, TEXT,
+   DECIMAL, FLOAT, BOOLEAN, DATE, TIMESTAMP, TIMESTAMPTZ, UUID, JSON.
+   NO parentheses, commas or spaces in a type: write VARCHAR (not VARCHAR(255)),
+   DECIMAL (not DECIMAL(10,2)), BIGINT (not BIGINT GENERATED ALWAYS AS IDENTITY).
+   Exact DBMS types belong in the tables of this document, never in the diagram.
+2. Attribute line format is exactly: <type> <name> [PK|FK|UK[, PK|FK|UK]]
+   name = letters, digits, underscore only. Nothing else on the line:
+   no NOT NULL, DEFAULT, UNIQUE, CHECK, REFERENCES, comments.
+   Multiple constraints are comma-separated, e.g. `BIGINT order_id PK, FK`.
+3. Relationship format: ENTITY_A ||--o{ ENTITY_B : "label"
+   The label is mandatory and always in double quotes, with no double quotes inside it.
+   Cardinality tokens: left side `||` `|o` `}|` `}o`, right side `||` `o|` `|{` `o{`.
+4. Entity names start with a letter and contain only letters, digits and underscores
+   (snake_case is fine). No spaces, hyphens or dots. Use the same names in the
+   conceptual and logical diagrams.
+5. Every entity used in a relationship must also have its own `{ ... }` block.
+6. In the LOGICAL diagram, M:N relationships must be drawn through a junction entity.
+
+Example of a valid diagram:
+```mermaid
+erDiagram
+    customers ||--o{ orders : "places"
+    orders ||--|{ order_items : "contains"
+    products ||--o{ order_items : "appears in"
+    customers {
+        BIGINT customer_id PK
+        VARCHAR email UK
+        TIMESTAMPTZ created_at
+    }
+    orders {
+        BIGINT order_id PK
+        BIGINT customer_id FK
+        DECIMAL total_amount
+    }
+    order_items {
+        BIGINT order_id PK, FK
+        BIGINT product_id PK, FK
+        INT quantity
+    }
+    products {
+        BIGINT product_id PK
+        VARCHAR name
+    }
+```

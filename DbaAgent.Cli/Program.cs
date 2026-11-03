@@ -4,14 +4,7 @@ using DbaAgent.Core.Stages;
 using Microsoft.Extensions.Configuration;
 using Spectre.Console;
 
-if (Directory.Exists("output"))
-{
-    foreach (var file in Directory.GetFiles("output", "*.md"))
-    {
-        var text = await File.ReadAllTextAsync(file);
-        await File.WriteAllTextAsync(file, TextSanitizer.StripOuterCodeFence(text));
-    }
-}
+await HealMarkdownFilesAsync("output");
 
 AnsiConsole.Write(new FigletText("DBA Agent").Color(Color.Cyan1));
 
@@ -23,14 +16,7 @@ var scenarioName = AnsiConsole.Prompt(
 var stateManager = new StateManager("output", scenarioName);
 AnsiConsole.MarkupLine($"[grey]Active Workspace:[/] [yellow]{stateManager.OutputDirectory}[/]");
 
-if (Directory.Exists(stateManager.OutputDirectory))
-{
-    foreach (var file in Directory.GetFiles(stateManager.OutputDirectory, "*.md"))
-    {
-        var text = await File.ReadAllTextAsync(file);
-        await File.WriteAllTextAsync(file, TextSanitizer.StripOuterCodeFence(text));
-    }
-}
+await HealMarkdownFilesAsync(stateManager.OutputDirectory);
 
 var configuration = new ConfigurationBuilder()
     .SetBasePath(AppContext.BaseDirectory)
@@ -69,6 +55,12 @@ if (stateManager.HasExistingSession() && !string.IsNullOrWhiteSpace(state.RawDes
         AnsiConsole.MarkupLine("[yellow]Started a fresh session.[/]");
     }
 }
+
+// Heal Mermaid diagrams already stored in a resumed session's state, so Stage 5
+// and later prompts don't receive the old broken diagrams as "current content".
+state.ConceptualModelDoc = TextSanitizer.SanitizeMermaid(state.ConceptualModelDoc);
+state.LogicalSchemaDoc = TextSanitizer.SanitizeMermaid(state.LogicalSchemaDoc);
+await stateManager.SaveAsync(state);
 
 // -------------------------------------------------------------
 // Stage 1: System Intake
@@ -393,6 +385,28 @@ if (state.CurrentStage == WorkflowStage.Completed)
 
     AnsiConsole.Write(summaryTable);
     AnsiConsole.MarkupLine("\n[bold green]All deliverables generated successfully in output/ directory![/]");
+}
+
+// -------------------------------------------------------------
+// Local helpers
+// -------------------------------------------------------------
+static async Task HealMarkdownFilesAsync(string directory)
+{
+    if (!Directory.Exists(directory))
+    {
+        return;
+    }
+
+    foreach (var file in Directory.GetFiles(directory, "*.md"))
+    {
+        var text = await File.ReadAllTextAsync(file);
+        var healed = TextSanitizer.SanitizeMermaid(TextSanitizer.StripOuterCodeFence(text));
+
+        if (!string.Equals(healed, text, StringComparison.Ordinal))
+        {
+            await File.WriteAllTextAsync(file, healed);
+        }
+    }
 }
 
 static string ReadMultiLineInput(string headerMarkup)

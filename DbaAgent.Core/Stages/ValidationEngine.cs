@@ -15,9 +15,20 @@ public sealed class ValidationEngine(
 
     public async Task<bool> RunValidationLoopAsync(SessionState state, Action<string> statusCallback)
     {
+        // 1. Resolve active scenario name dynamically from the output workspace directory
+        var scenarioName = Path.GetFileName(
+            stateManager.OutputDirectory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+        );
+
+        if (string.IsNullOrWhiteSpace(scenarioName))
+        {
+            scenarioName = "default";
+        }
+
+        // 2. Instantiate validator with the target scenario name for automated DB isolation
         IDbValidator validator = state.SelectedDbms.ToLowerInvariant() switch
         {
-            "postgresql" or "postgres" => new PostgresValidator(config.PostgresConnectionString),
+            "postgresql" or "postgres" => new PostgresValidator(config.PostgresConnectionString, scenarioName),
             _ => throw new NotSupportedException(
                 $"Automated live validation for '{state.SelectedDbms}' is not configured.")
         };
@@ -48,16 +59,17 @@ public sealed class ValidationEngine(
                 return true;
             }
 
-            // If connection itself failed, abort immediately so user can check their DB/Docker
-            if (result.FailedScriptName == "connection")
+            // Abort immediately on environment/network failures to prevent burning tokens on SQL repairs
+            if (result.FailedScriptName is "connection" or "provisioning")
             {
-                throw new InvalidOperationException(result.ErrorMessage);
+                throw new InvalidOperationException(
+                    $"{result.ErrorMessage}\nDetails: {result.ErrorDetail}");
             }
 
             statusCallback(
                 $"Validation failed in {result.FailedScriptName}: {result.ErrorMessage}. Requesting LLM self-healing repair...");
 
-            // Log the execution failure
+            // Log execution failure
             await logger.LogAsync(new LlmCallLog(
                 Timestamp: DateTime.UtcNow,
                 Stage: "ValidationLoop_Failure",
@@ -111,17 +123,33 @@ public sealed class ValidationEngine(
         var schemaIndex = rawOutput.IndexOf(RepairedSchemaDelimiter, StringComparison.OrdinalIgnoreCase);
         var seedIndex = rawOutput.IndexOf(RepairedSeedDelimiter, StringComparison.OrdinalIgnoreCase);
 
-        if (schemaIndex == -1 || seedIndex == -1)
+        // Neither delimiter was returned: fallback
+        if (schemaIndex == -1 && seedIndex == -1)
         {
             return (fallbackSchema, fallbackSeed);
         }
 
-        var schemaPart = rawOutput.Substring(
-            schemaIndex + RepairedSchemaDelimiter.Length,
-            seedIndex - (schemaIndex + RepairedSchemaDelimiter.Length)).Trim();
+        var repairedSchema = fallbackSchema;
+        var repairedSeed = fallbackSeed;
 
-        var seedPart = rawOutput.Substring(seedIndex + RepairedSeedDelimiter.Length).Trim();
+        if (schemaIndex != -1 && seedIndex != -1 && seedIndex > schemaIndex)
+        {
+            var schemaStart = schemaIndex + RepairedSchemaDelimiter.Length;
+            repairedSchema = rawOutput.Substring(schemaStart, seedIndex - schemaStart).Trim();
+            repairedSeed = rawOutput.Substring(seedIndex + RepairedSeedDelimiter.Length).Trim();
+        }
+        else if (schemaIndex != -1 && seedIndex == -1)
+        {
+            repairedSchema = rawOutput.Substring(schemaIndex + RepairedSchemaDelimiter.Length).Trim();
+        }
+        else if (seedIndex != -1 && schemaIndex == -1)
+        {
+            repairedSeed = rawOutput.Substring(seedIndex + RepairedSeedDelimiter.Length).Trim();
+        }
 
-        return (schemaPart, seedPart);
+        return (
+            string.IsNullOrWhiteSpace(repairedSchema) ? fallbackSchema : repairedSchema,
+            string.IsNullOrWhiteSpace(repairedSeed) ? fallbackSeed : repairedSeed
+        );
     }
 }

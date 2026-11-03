@@ -2,6 +2,7 @@
 using System.Text.Json;
 using DbaAgent.Core.Models;
 using DbaAgent.Core.Services;
+using DbaAgent.Core.Validation;
 
 namespace DbaAgent.Core.Stages;
 
@@ -75,10 +76,28 @@ public sealed class Stage5RevisionLoop(ILlmService llmService, IPromptService pr
             var revisedContent =
                 await llmService.GenerateAsync($"Stage5_Update_{cleanName}", updateSystem, updateUser);
 
-            var sanitizedContent = TextSanitizer.StripOuterCodeFence(revisedContent.Trim());
+            // 1. Sanitize the generated content before validation
+            var preparedContent = TextSanitizer.SanitizeMermaid(
+                TextSanitizer.StripOuterCodeFence(revisedContent.Trim())
+            );
+
+            // 2. Validate Mermaid diagrams in the relevant files
+            if (cleanName is "conceptual-model.md" or "logical-schema.md")
+            {
+                var validationResult = DocumentValidator.ValidateMermaidDiagram(preparedContent);
+
+                if (!validationResult.IsValid)
+                {
+                    throw new InvalidOperationException(
+                        $"Validation failed for {cleanName}:\n{validationResult.ErrorMessage}"
+                    );
+                }
+            }
+
+            // 3. Save only after validation succeeds
+            var sanitizedContent = await stateManager.WriteArtifactAsync(cleanName, preparedContent);
 
             SetFileContentInState(state, cleanName, sanitizedContent);
-            await stateManager.WriteArtifactAsync(cleanName, sanitizedContent);
             updatedFiles.Add(cleanName);
         }
 
