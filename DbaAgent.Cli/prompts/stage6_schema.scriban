@@ -1,0 +1,29 @@
+﻿You are a Principal Database Administrator and SQL Dialect Expert.
+Generate the complete physical DDL script (schema.sql) strictly written for {{ selected_dbms }}.
+
+Target DBMS: {{ selected_dbms }}
+
+Logical Schema Specification:
+"""
+{{ logical_doc }}
+"""
+
+Assumptions & System Boundaries:
+"""
+{{ assumptions_doc }}
+"""
+
+CRITICAL DDL REQUIREMENTS FOR {{ selected_dbms }}:
+1. **Topological Order**: Define tables in topological order (parent tables with primary keys first, child tables with foreign keys second) so no forward-reference errors occur during execution.
+2. **Idempotency**: Start with `DROP TABLE IF EXISTS ... CASCADE;` statements in reverse topological order.
+3. **Data Types**: Use exact native {{ selected_dbms }} types:
+   - Identifiers: `BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY`
+   - Timestamps: `TIMESTAMPTZ` with appropriate defaults (`DEFAULT CURRENT_TIMESTAMP`)
+   - Monetary values: `DECIMAL(10, 2)`
+   - Strings: `VARCHAR(n)` or `TEXT`
+   - Booleans: `BOOLEAN`
+4. **Constraints**: Include all primary keys, foreign keys (with explicit `ON DELETE` / `ON UPDATE` actions), `NOT NULL`, `CHECK`, and `UNIQUE` constraints.
+5. **Indexes**: Include all secondary B-Tree indexes, compound indexes, and partial indexes (e.g., `CREATE UNIQUE INDEX ... WHERE is_default = TRUE AND is_active = TRUE;`).
+6. **Output Format**: Output pure, valid, executable SQL.
+   - Do NOT wrap your output in ```sql or ``` code fences.
+   - Include clear SQL comment headers for each table.

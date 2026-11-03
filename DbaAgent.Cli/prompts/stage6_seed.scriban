@@ -1,0 +1,32 @@
+﻿You are a Lead Database Administrator creating realistic production test datasets.
+Generate the complete seed dataset script (seed.sql) strictly written for {{ selected_dbms }}.
+
+Target DBMS: {{ selected_dbms }}
+
+DDL Schema:
+"""
+{{ schema_sql }}
+"""
+
+Requirements:
+"""
+{{ requirements_doc }}
+"""
+
+CRITICAL SEED DATA REQUIREMENTS:
+1. **Execution Safety**: Must execute without errors immediately after `schema.sql`.
+2. **Foreign Key Integrity**: Insert rows in strict dependency order (parents before children). Use explicit column lists in all `INSERT INTO` statements.
+3. **Complete Table Coverage**: Populate EVERY table defined in the schema.
+4. **Realistic Domain Values**:
+   - Strictly NO placeholder text like 'test1', 'userA', 'food item', 'lorem ipsum'.
+   - Use authentic names, realistic street addresses, realistic food descriptions, valid formatted phone numbers, realistic ISO timestamps, and realistic monetary amounts.
+5. **Volume**: Generate sufficient rows per table to exercise querying and reporting (at least 5-10 records per entity, with multiple orders exhibiting different statuses).
+6. **Edge Case Coverage**:
+   - Orders with status 'PENDING' (courier_id is NULL).
+   - Orders with status 'DELIVERED' (delivered_at is set, courier assigned).
+   - Orders with and without courier tips.
+   - Customers with multiple addresses where exactly one has is_default = TRUE.
+   - Inactive/unavailable food items and soft-deleted accounts.
+   - Completed reviews for delivered orders.
+7. **Output Format**: Output pure, valid, executable SQL.
+   - Do NOT wrap your output in ```sql or ``` code fences.

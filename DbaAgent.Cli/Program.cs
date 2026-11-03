@@ -271,6 +271,53 @@ if (state.CurrentStage == WorkflowStage.RevisionLoop)
     }
 }
 
+// -------------------------------------------------------------
+// Stage 6: SQL Generation
+// -------------------------------------------------------------
+if (state.CurrentStage == WorkflowStage.SqlGeneration)
+{
+    AnsiConsole.Write(new Rule("[bold yellow]Stage 6: SQL Generation[/]").LeftJustified());
+    AnsiConsole.MarkupLine($"[grey]Generating executable SQL artifacts for [bold cyan]{state.SelectedDbms}[/]...[/]\n");
+
+    var sqlStage = new Stage6SqlGeneration(llmService, promptService, stateManager);
+
+    await AnsiConsole.Status()
+        .Spinner(Spinner.Known.Dots)
+        .StartAsync("Generating SQL scripts...",
+            async ctx => { await sqlStage.ExecuteAsync(state, statusText => { ctx.Status(statusText); }); });
+
+    AnsiConsole.MarkupLine("\n[bold green]Stage 6 Complete![/] Generated SQL artifacts in [cyan]output/[/]:");
+    AnsiConsole.MarkupLine("  [green]✓[/] [cyan]output/schema.sql[/] (DDL tables, constraints, partial indexes)");
+    AnsiConsole.MarkupLine("  [green]✓[/] [cyan]output/seed.sql[/] (Realistic test dataset with foreign key ordering)");
+}
+
+// -------------------------------------------------------------
+// Pipeline Complete Summary
+// -------------------------------------------------------------
+if (state.CurrentStage == WorkflowStage.Completed)
+{
+    AnsiConsole.WriteLine();
+    AnsiConsole.Write(new Rule("[bold green]Pipeline Execution Completed[/]").LeftJustified());
+
+    var summaryTable = new Table().Border(TableBorder.Rounded);
+    summaryTable.AddColumn("[bold]Artifact[/]");
+    summaryTable.AddColumn("[bold]Description[/]");
+    summaryTable.AddColumn("[bold]Status[/]");
+
+    summaryTable.AddRow("requirements.md", "Synthesized requirements specification", "[green]Ready[/]");
+    summaryTable.AddRow("dbms-choice.md", $"Comparison matrix & {state.SelectedDbms} justification", "[green]Ready[/]");
+    summaryTable.AddRow("conceptual-model.md", "Conceptual entities & Mermaid ER diagram", "[green]Ready[/]");
+    summaryTable.AddRow("logical-schema.md", "Tables, types, constraints, relational diagram", "[green]Ready[/]");
+    summaryTable.AddRow("normalization.md", "Functional dependencies & 1NF-BCNF proofs", "[green]Ready[/]");
+    summaryTable.AddRow("assumptions.md", "System boundaries & architectural assumptions", "[green]Ready[/]");
+    summaryTable.AddRow("changelog.md", "Historical log of all propagated design revisions", "[green]Ready[/]");
+    summaryTable.AddRow("schema.sql", $"Executable DDL script for {state.SelectedDbms}", "[green]Ready[/]");
+    summaryTable.AddRow("seed.sql", "Executable realistic sample data insertion script", "[green]Ready[/]");
+
+    AnsiConsole.Write(summaryTable);
+    AnsiConsole.MarkupLine("\n[bold green]All deliverables generated successfully in output/ directory![/]");
+}
+
 static string ReadMultiLineInput(string headerMarkup)
 {
     AnsiConsole.MarkupLine(headerMarkup);
