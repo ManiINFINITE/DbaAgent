@@ -197,6 +197,80 @@ if (state.CurrentStage == WorkflowStage.DesignDocs)
     AnsiConsole.MarkupLine("  [green]✓[/] [cyan]output/assumptions.md[/] (boundary rules and ambiguities)");
 }
 
+// -------------------------------------------------------------
+// Stage 5: Revision Loop
+// -------------------------------------------------------------
+if (state.CurrentStage == WorkflowStage.RevisionLoop)
+{
+    AnsiConsole.Write(new Rule("[bold yellow]Stage 5: Revision Loop[/]").LeftJustified());
+
+    AnsiConsole.MarkupLine(
+        "[grey]You can request changes in natural language (e.g. 'add courier tip support', 'make addresses M:N').[/]");
+
+    AnsiConsole.MarkupLine(
+        "[grey]The agent will propagate changes to all affected files and record them in changelog.md.[/]");
+
+    AnsiConsole.MarkupLine(
+        "[grey]Type [bold white]approve[/] when you are satisfied with the design to proceed to SQL generation.[/]\n");
+
+    var revisionStage = new Stage5RevisionLoop(llmService, promptService, stateManager);
+
+    while (!state.IsApproved)
+    {
+        var action = AnsiConsole.Prompt(
+            new SelectionPrompt<string>()
+                .Title("What would you like to do?")
+                .AddChoices([
+                    "Request a design modification",
+                    "Approve design and proceed to SQL Generation"
+                ])
+        );
+
+        if (action.StartsWith("Approve", StringComparison.OrdinalIgnoreCase))
+        {
+            await revisionStage.FinalizeApprovalAsync(state);
+
+            AnsiConsole.MarkupLine(
+                "[bold green]Design explicitly approved![/] Advancing to Stage 6 (SQL Generation)...");
+
+            break;
+        }
+
+        var modificationRequest = ReadMultiLineInput("[green]Describe the requested design modification:[/]");
+
+        if (string.IsNullOrWhiteSpace(modificationRequest) ||
+            modificationRequest.Trim().Equals("approve", StringComparison.OrdinalIgnoreCase))
+        {
+            await revisionStage.FinalizeApprovalAsync(state);
+
+            AnsiConsole.MarkupLine(
+                "[bold green]Design explicitly approved![/] Advancing to Stage 6 (SQL Generation)...");
+
+            break;
+        }
+
+        RevisionExecutionResult result = null!;
+
+        await AnsiConsole.Status()
+            .Spinner(Spinner.Known.Dots)
+            .StartAsync("Propagating revision across affected artifacts...",
+                async ctx =>
+                {
+                    result = await revisionStage.ApplyChangeAsync(state,
+                        modificationRequest,
+                        statusMsg => { ctx.Status(statusMsg); });
+                });
+
+        AnsiConsole.MarkupLine($"\n[bold green]Revision Applied:[/] {result.Summary}");
+        AnsiConsole.MarkupLine($"[grey]Rationale:[/] {result.Rationale}");
+
+        AnsiConsole.MarkupLine("[bold cyan]Propagated to files:[/] " +
+                               string.Join(", ", result.UpdatedFiles.Select(f => $"[yellow]{f}[/]")));
+
+        AnsiConsole.MarkupLine("[grey]Entry appended to [cyan]output/changelog.md[/][/]\n");
+    }
+}
+
 static string ReadMultiLineInput(string headerMarkup)
 {
     AnsiConsole.MarkupLine(headerMarkup);

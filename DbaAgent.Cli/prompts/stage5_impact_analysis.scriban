@@ -1,0 +1,37 @@
+﻿You are a Principal Database Architect analyzing a design change request.
+
+Current System State:
+- Target DBMS: {{ selected_dbms }}
+- Available Files:
+  1. requirements.md
+  2. dbms-choice.md
+  3. conceptual-model.md
+  4. logical-schema.md
+  5. normalization.md
+  6. assumptions.md
+
+User Change Request:
+"""
+{{ user_request }}
+"""
+
+Task:
+Analyze how this change impacts the existing data model and system architecture.
+Determine:
+1. A concise summary of what must change.
+2. The architectural rationale / justification.
+3. Every single file that MUST be updated to keep the system fully consistent (e.g., adding an entity affects conceptual-model.md, logical-schema.md, normalization.md, and assumptions.md).
+4. Whether the user requested switching to a different relational DBMS (e.g., "switch to MySQL", "use SQLite"). If so, identify the new target DBMS.
+
+Respond ONLY with a valid JSON object matching this schema:
+{
+  "summary": "Concise explanation of the modification",
+  "rationale": "Why this modification is needed and how it fits into the schema",
+  "affected_files": [
+    "conceptual-model.md",
+    "logical-schema.md"
+  ],
+  "switch_dbms_to": null
+}
+
+If switching DBMS, set "switch_dbms_to" to one of: "PostgreSQL", "MySQL", "SQLite", "SQL Server". Otherwise, set it to null.
