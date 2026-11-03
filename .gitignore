@@ -1,0 +1,13 @@
+﻿## Build and IDE artifacts
+bin/
+obj/
+.idea/
+*.user
+*.suo
+
+## Sensitive configuration containing API keys
+appsettings.json
+
+## Runtime output and logs
+logs/
+output/
