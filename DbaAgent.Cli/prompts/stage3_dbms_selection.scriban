@@ -1,0 +1,35 @@
+﻿You are a Principal Database Architect evaluating candidate relational database management systems for a production application.
+
+Review the formalized requirements specification below:
+"""
+{{ requirements_doc }}
+"""
+
+Evaluation Mandate:
+Compare the following four relational DBMS options:
+1. PostgreSQL
+2. MySQL / MariaDB
+3. SQLite
+4. Microsoft SQL Server
+
+Requirements to cross-examine:
+- Concurrency and lock contention handling (e.g., couriers claiming orders atomically, high read/write ratio)
+- Constraint and indexing capabilities (e.g., partial unique index for default addresses: `UNIQUE(customer_id) WHERE is_default = TRUE AND is_active = TRUE`)
+- Native data types (e.g., `TIMESTAMPTZ`, `CHECK` constraints, identity keys, structured audit history)
+- Transactional ACID integrity and operational scale (4,000 to 15,000 daily orders, 7-year audit retention)
+- Deployment flexibility and licensing cost
+
+Output Format:
+Generate a professional, publication-ready report in pure Markdown titled `# DBMS Selection & Technical Justification`.
+The document must include:
+1. **Selected Relational DBMS**: Clear statement of the winning DBMS.
+2. **Evaluation Matrix**: A Markdown comparison table with columns:
+   `| DBMS | Transaction & Concurrency Model | Partial Indexes & Advanced Constraints | Scalability & Volume Fit | Licensing & Operational Overhead | Suitability Score (1-10) |`
+3. **Architectural Justification**: Concrete, technical justification explaining why the selected DBMS directly fulfills the requirements gathered in Stage 2. Reference specific requirements (e.g., partial indexes, concurrency locks, data types).
+4. **Rejection Analysis**: A dedicated subsection for each rejected candidate detailing its specific shortcomings or trade-offs for this workload:
+   - Why SQLite was rejected
+   - Why MySQL / MariaDB was rejected
+   - Why Microsoft SQL Server was rejected
+
+At the very end of your response, output a single machine-readable tag on its own line:
+`[SELECTED_DBMS: <ExactName>]` where `<ExactName>` is one of: `PostgreSQL`, `MySQL`, `SQLite`, or `SQL Server`.

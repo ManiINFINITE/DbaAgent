@@ -140,6 +140,35 @@ if (state.CurrentStage == WorkflowStage.Interview)
     AnsiConsole.MarkupLine("\n[bold green]Stage 2 Complete![/] Generated [cyan]output/requirements.md[/]");
 }
 
+// -------------------------------------------------------------
+// Stage 3: DBMS Selection
+// -------------------------------------------------------------
+if (state.CurrentStage == WorkflowStage.DbmsSelection)
+{
+    AnsiConsole.Write(new Rule("[bold yellow]Stage 3: DBMS Selection[/]").LeftJustified());
+
+    AnsiConsole.MarkupLine(
+        "[grey]The agent is evaluating candidate relational DBMS engines (PostgreSQL, MySQL, SQLite, SQL Server)...[/]\n");
+
+    var dbmsStage = new Stage3DbmsSelection(llmService, promptService, stateManager);
+    var dbmsDoc = string.Empty;
+
+    await AnsiConsole.Status()
+        .Spinner(Spinner.Known.Dots)
+        .StartAsync("Benchmarking requirements against RDBMS engines...",
+            async _ => { dbmsDoc = await dbmsStage.ExecuteAsync(state); });
+
+    AnsiConsole.MarkupLine($"[bold green]Selected DBMS:[/] [bold cyan]{state.SelectedDbms}[/]");
+
+    AnsiConsole.Write(new Panel(new Markup(dbmsDoc.Replace("[", "[[").Replace("]", "]]")))
+    {
+        Header = new PanelHeader($"[bold cyan]DBMS Decision: {state.SelectedDbms}[/]"),
+        Border = BoxBorder.Rounded
+    });
+
+    AnsiConsole.MarkupLine("\n[bold green]Stage 3 Complete![/] Written to [cyan]output/dbms-choice.md[/]");
+}
+
 static string ReadMultiLineInput(string headerMarkup)
 {
     AnsiConsole.MarkupLine(headerMarkup);
