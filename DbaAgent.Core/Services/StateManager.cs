@@ -18,6 +18,7 @@ public sealed class StateManager
     public StateManager(string outputDir = "output")
     {
         _outputDir = outputDir;
+
         if (!Directory.Exists(_outputDir))
         {
             Directory.CreateDirectory(_outputDir);
@@ -51,7 +52,10 @@ public sealed class StateManager
 
     public async Task WriteArtifactAsync(string filename, string content)
     {
+        // Automatically sanitize outer markdown/sql fences if present
+        var sanitizedContent = TextSanitizer.StripOuterCodeFence(content);
+
         var filePath = Path.Combine(_outputDir, filename);
-        await File.WriteAllTextAsync(filePath, content);
+        await File.WriteAllTextAsync(filePath, sanitizedContent);
     }
 }

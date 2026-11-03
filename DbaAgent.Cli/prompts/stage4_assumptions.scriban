@@ -1,0 +1,27 @@
+﻿You are a Systems Architect and Database Administrator.
+Identify and document all implicit assumptions, architectural trade-offs, and unresolved ambiguities in the database design.
+
+Requirements:
+"""
+{{ requirements_doc }}
+"""
+
+Logical Schema:
+"""
+{{ logical_doc }}
+"""
+
+Task:
+Produce a Markdown document titled `# System Assumptions & Boundary Conditions`.
+The document MUST document:
+1. **Domain Assumptions**: Inferred domain rules (e.g., timezone assumptions, multi-currency vs single currency, distance calculations for couriers).
+2. **Data Lifecycle & Archival Assumptions**: Partitioning strategies, retention horizons for orders and status history, and soft-delete semantics vs physical purge policies.
+3. **Security & Privacy Boundary Decisions**: Tokenization boundaries (PCI DSS compliance), anonymization strategies upon account deletion, and credential hashing schemes.
+4. **Open Ambiguities & Future Extensibility**: Potential bottlenecks or future requirements that might require schema modifications (e.g., order tipping, delivery route coordinates, multi-vendor carts).
+
+Output pure Markdown.
+
+CRITICAL FORMATTING CONSTRAINT:
+Return raw, unquoted Markdown directly.
+Do NOT enclose your entire response in ```markdown or ``` code fences.
+Internal code blocks (such as ```mermaid ... ``` or ```sql ... ```) MUST still use their standard backtick tags.

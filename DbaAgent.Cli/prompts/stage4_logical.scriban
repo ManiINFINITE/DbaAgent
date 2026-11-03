@@ -1,0 +1,37 @@
+﻿You are a Principal Database Administrator.
+Transform the conceptual model into an exact, physical-ready logical relational schema tailored specifically for {{ selected_dbms }}.
+
+Requirements Specification:
+"""
+{{ requirements_doc }}
+"""
+
+Conceptual Model:
+"""
+{{ conceptual_doc }}
+"""
+
+Target DBMS: {{ selected_dbms }}
+
+Task:
+Produce a comprehensive Markdown document titled `# Logical Database Schema ({{ selected_dbms }})`.
+The document MUST include:
+1. **Relational Table Specifications**: For every table, provide a detailed Markdown table with columns:
+   `| Column Name | Data Type | Nullable | Key / Constraint | Description / Default |`
+   - Use exact {{ selected_dbms }} types (e.g., `BIGINT GENERATED ALWAYS AS IDENTITY`, `VARCHAR(n)`, `TIMESTAMPTZ`, `DECIMAL(p,s)`, `BOOLEAN`).
+   - Specify composite keys and junction tables for M:N relationships.
+   - Explicitly detail foreign key referential actions (`ON DELETE RESTRICT/CASCADE/SET NULL`, `ON UPDATE CASCADE`).
+2. **Constraint Catalog**: Explicit list of all `CHECK`, `UNIQUE`, and `NOT NULL` constraints enforcing the business rules.
+3. **Indexing Strategy**: Exhaustive list of all B-Tree indexes, compound indexes, and partial indexes (e.g., partial unique index for default customer address). Explain the query patterns each index accelerates.
+4. **Relational Diagram**: A Mermaid diagram representing the relational tables, foreign key linkages, and column lists.
+
+All tables and column names must strictly use consistent naming conventions (e.g., snake_case). Output pure Markdown.
+
+MERMAID SYNTAX RULES:
+- ALWAYS wrap relationship labels in double quotes (e.g., `A ||--o{ B : "places"` or `A ||--|| B : "corresponds to"`). Never leave relationship labels unquoted.
+- Ensure entity names are single alphanumeric words without spaces or dashes.
+
+CRITICAL FORMATTING CONSTRAINT:
+Return raw, unquoted Markdown directly.
+Do NOT enclose your entire response in ```markdown or ``` code fences.
+Internal code blocks (such as ```mermaid ... ``` or ```sql ... ```) MUST still use their standard backtick tags.

@@ -1,0 +1,31 @@
+﻿You are a Principal Database Designer.
+Generate the conceptual data model for the system based on the finalized requirements and selected DBMS.
+
+Requirements Specification:
+"""
+{{ requirements_doc }}
+"""
+
+Target DBMS: {{ selected_dbms }}
+
+Task:
+Produce a complete Markdown document titled `# Conceptual Data Model`.
+The document MUST include:
+1. **Entity Catalog**: Exhaustive list of all strong and weak entities with business descriptions and candidate keys.
+2. **Relationship Matrix & Cardinalities**: Detailed descriptions of every relationship (1:1, 1:N, M:N) including participation constraints (mandatory vs optional).
+3. **Mermaid ER Diagram**: A complete, syntactically valid `mermaid` code block using `erDiagram`.
+   - Represent EVERY entity.
+   - Show relationships with proper crows-foot notation:
+     `||--o{` (one to zero-or-more), `||--|{` (one to one-or-more), `||--||` (one to one).
+   - Include key attributes inside the entity blocks in the diagram.
+
+Ensure the Mermaid syntax is strict and error-free so it renders natively in GitHub and Markdown viewers. Output pure Markdown.
+
+MERMAID SYNTAX RULES:
+- ALWAYS wrap relationship labels in double quotes (e.g., `A ||--o{ B : "places"` or `A ||--|| B : "corresponds to"`). Never leave relationship labels unquoted.
+- Ensure entity names are single alphanumeric words without spaces or dashes.
+
+CRITICAL FORMATTING CONSTRAINT:
+Return raw, unquoted Markdown directly.
+Do NOT enclose your entire response in ```markdown or ``` code fences.
+Internal code blocks (such as ```mermaid ... ``` or ```sql ... ```) MUST still use their standard backtick tags.

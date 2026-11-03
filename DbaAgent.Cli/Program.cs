@@ -4,6 +4,12 @@ using DbaAgent.Core.Stages;
 using Microsoft.Extensions.Configuration;
 using Spectre.Console;
 
+foreach (var file in Directory.GetFiles("output", "*.md"))
+{
+    var text = await File.ReadAllTextAsync(file);
+    await File.WriteAllTextAsync(file, TextSanitizer.StripOuterCodeFence(text));
+}
+
 AnsiConsole.Write(new FigletText("DBA Agent").Color(Color.Cyan1));
 
 var configuration = new ConfigurationBuilder()
@@ -167,6 +173,28 @@ if (state.CurrentStage == WorkflowStage.DbmsSelection)
     });
 
     AnsiConsole.MarkupLine("\n[bold green]Stage 3 Complete![/] Written to [cyan]output/dbms-choice.md[/]");
+}
+
+// -------------------------------------------------------------
+// Stage 4: Design Documentation
+// -------------------------------------------------------------
+if (state.CurrentStage == WorkflowStage.DesignDocs)
+{
+    AnsiConsole.Write(new Rule("[bold yellow]Stage 4: Design Documentation[/]").LeftJustified());
+    AnsiConsole.MarkupLine("[grey]The agent is generating complete design documentation and diagrams...[/]\n");
+
+    var designStage = new Stage4DesignDocumentation(llmService, promptService, stateManager);
+
+    await AnsiConsole.Status()
+        .Spinner(Spinner.Known.Dots)
+        .StartAsync("Initializing documentation pipeline...",
+            async ctx => { await designStage.ExecuteAsync(state, statusText => { ctx.Status(statusText); }); });
+
+    AnsiConsole.MarkupLine("[bold green]Stage 4 Complete![/] Generated 4 design artifacts in [cyan]output/[/]:");
+    AnsiConsole.MarkupLine("  [green]✓[/] [cyan]output/conceptual-model.md[/] (with Mermaid ER diagram)");
+    AnsiConsole.MarkupLine("  [green]✓[/] [cyan]output/logical-schema.md[/] (tables, columns, types, indexes)");
+    AnsiConsole.MarkupLine("  [green]✓[/] [cyan]output/normalization.md[/] (FDs and normal-form proofs)");
+    AnsiConsole.MarkupLine("  [green]✓[/] [cyan]output/assumptions.md[/] (boundary rules and ambiguities)");
 }
 
 static string ReadMultiLineInput(string headerMarkup)

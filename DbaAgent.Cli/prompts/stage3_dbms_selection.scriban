@@ -33,3 +33,8 @@ The document must include:
 
 At the very end of your response, output a single machine-readable tag on its own line:
 `[SELECTED_DBMS: <ExactName>]` where `<ExactName>` is one of: `PostgreSQL`, `MySQL`, `SQLite`, or `SQL Server`.
+
+CRITICAL FORMATTING CONSTRAINT:
+Return raw, unquoted Markdown directly.
+Do NOT enclose your entire response in ```markdown or ``` code fences.
+Internal code blocks (such as ```mermaid ... ``` or ```sql ... ```) MUST still use their standard backtick tags.
